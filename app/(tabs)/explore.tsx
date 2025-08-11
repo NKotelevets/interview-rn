@@ -1,3 +1,4 @@
+import type { QuestionHandle } from "@/components/Questions";
 import {
   Question1,
   Question2,
@@ -5,21 +6,43 @@ import {
   Question4,
 } from "@/components/Questions";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Card = {
   id: number;
   title: string;
-  content: React.ReactNode;
+  component: React.ForwardRefExoticComponent<
+    React.RefAttributes<QuestionHandle>
+  >;
+  question: string;
 };
 
-function CardItem({ card }: { card: Card }) {
+function CardItem({
+  title,
+  children,
+  result,
+  question,
+}: {
+  title: string;
+  children: React.ReactNode;
+  result?: string;
+  question: string;
+}) {
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>{card.title}</Text>
-      {card.content}
+      <Text style={styles.cardTitle}>{title}</Text>
+      <Text style={styles.cardDescription}>{question}</Text>
+      {children}
+      {result ? (
+        <View style={styles.resultBox}>
+          <Text style={styles.resultLabel}>Result:</Text>
+          <Text selectable style={styles.resultText}>
+            {result}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -31,23 +54,40 @@ export default function ExploreCardsScreen() {
 
   const cards = useMemo<Card[]>(
     () => [
-      { id: 1, title: "Question 1", content: <Question1 /> },
-      { id: 2, title: "Question 2", content: <Question2 /> },
+      {
+        id: 1,
+        title: "Question 1",
+        question: "What will be the output of the following code?",
+        component: Question1,
+      },
+      {
+        id: 2,
+        title: "Question 2",
+        question:
+          "What will be the output of the following code if -1 is passed as an argument?",
+        component: Question2,
+      },
       {
         id: 3,
         title: "Question 3",
-        content: <Question3 />,
+        question: "What will be the output of the following code?",
+
+        component: Question3,
       },
       {
         id: 4,
         title: "Question 4",
-        content: <Question4 />,
+        question: "What will be the output of the following code?",
+
+        component: Question4,
       },
     ],
     []
   );
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [resultsById, setResultsById] = useState<Record<number, string>>({});
+  const questionRef = useRef<QuestionHandle>(null);
 
   const canGoBack = currentIndex > 0;
   const canGoNext = currentIndex < cards.length - 1;
@@ -60,13 +100,29 @@ export default function ExploreCardsScreen() {
   };
 
   const handleResult = () => {
-    console.log("Result");
+    const current = cards[currentIndex];
+    const output = questionRef.current?.run();
+    if (typeof output === "string") {
+      setResultsById((prev) => ({ ...prev, [current.id]: output }));
+    }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.contentCenter}>
-        <CardItem card={cards[currentIndex]} />
+        {(() => {
+          const current = cards[currentIndex];
+          const QuestionComp = current.component;
+          return (
+            <CardItem
+              title={current.title}
+              result={resultsById[current.id]}
+              question={current.question}
+            >
+              <QuestionComp ref={questionRef} />
+            </CardItem>
+          );
+        })()}
         <Text style={styles.counter}>{`${currentIndex + 1} / ${
           cards.length
         }`}</Text>
@@ -142,10 +198,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     marginBottom: 8,
+    paddingHorizontal: 20,
   },
   cardDescription: {
-    fontSize: 16,
-    color: "#333",
+    fontSize: 14,
+    color: "#000",
+    paddingHorizontal: 20,
   },
   counter: {
     marginTop: 10,
@@ -174,5 +232,19 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
     fontSize: 16,
+  },
+  resultBox: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#F3F4F6",
+  },
+  resultLabel: {
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  resultText: {
+    fontFamily: "SpaceMono",
+    fontSize: 12,
   },
 });
