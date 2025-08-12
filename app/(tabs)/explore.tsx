@@ -100,6 +100,18 @@ export default function ExploreCardsScreen() {
   };
 
   const handleResult = () => {
+    // fetch("https://interview-login-server.vercel.app/api/login", {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({
+    //     email: "test@example.com",
+    //     password: "123456",
+    //   }),
+    // })
+    //   .then((res) => res.json())
+    //   .then((data) => console.log("data", data))
+    //   .catch((err) => console.error(err));
+
     const current = cards[currentIndex];
     const output = questionRef.current?.run();
     if (typeof output === "string") {
